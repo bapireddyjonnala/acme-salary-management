@@ -21,6 +21,10 @@ yarn-error.log*
 .env.*
 !.env.example
 
+# Database
+*.db
+salary_management.db
+
 # IDE & OS
 .vscode/
 .idea/
