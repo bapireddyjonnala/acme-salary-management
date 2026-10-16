@@ -1,16 +1,36 @@
 
+from contextlib import asynccontextmanager
+import sys
 from fastapi import FastAPI, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 
-from backend.database import Base, engine, get_db
+from backend.database import Base, engine, get_db, SessionLocal
 from backend.models import Employee
 from backend.schemas import AnalyticsResponse, EmployeeCreate, EmployeeResponse
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="ACME Salary Management System")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    if "pytest" not in sys.modules:
+        db = SessionLocal()
+        try:
+            if not db.query(Employee.id).first():
+                try:
+                    from seed import seed_employees
+                    seed_employees()
+                except Exception as seed_err:
+                    print(f"Auto-seed notice: {seed_err}")
+        finally:
+            db.close()
+    yield
+
+
+app = FastAPI(title="ACME Salary Management System", lifespan=lifespan)
 
 
 @app.get("/")
