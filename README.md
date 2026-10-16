@@ -80,11 +80,19 @@ npm run build
 
 ## Seed Data
 
-The project includes a seed script for generating synthetic employee records for testing. Run it using the instructions and database configuration in the source code.
+To populate the local SQLite database with 10,000 synthetic employee records across India, United States, United Kingdom, Germany, and Singapore:
+
+```powershell
+.\.venv\Scripts\python.exe seed.py
+```
 
 ## Project Artifacts
 
-Requirements, architecture/design notes, testing details, and AI-assisted development notes should be included in the repository as separate documentation files.
+Comprehensive assessment and architectural documentation is available in the [`docs/`](docs/) directory:
+
+- [Requirements & Specification](docs/requirements.md)
+- [System Architecture & Technical Design](docs/architecture.md)
+- [AI-Assisted Development Log & Methodology](docs/ai-usage.md)
 
 ## Data and Security
 
