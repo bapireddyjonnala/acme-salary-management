@@ -8,5 +8,6 @@ frontend/dist/
 .env
 .env.*
 !.env.example
+!.env.production
 *.db
 salary_management.db

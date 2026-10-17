@@ -11,7 +11,19 @@ import {
 } from "recharts";
 import "./App.css";
 
-const API = "/api";
+function resolveApiBaseUrl() {
+  const envUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+  if (envUrl) {
+    const trimmed = envUrl.trim().replace(/\/+$/, "");
+    return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
+  }
+  if (import.meta.env.PROD) {
+    return "https://acme-salary-backend-s4j1.onrender.com/api";
+  }
+  return "/api";
+}
+
+const API = resolveApiBaseUrl();
 
 const DEPARTMENTS = [
   "Engineering",

@@ -1,14 +1,29 @@
-
 from contextlib import asynccontextmanager
+import os
 import sys
+from pathlib import Path
+
+# Ensure project root and backend directory are in sys.path so 'backend.*' imports work from any working directory
+_current_dir = Path(__file__).resolve().parent
+_project_root = _current_dir.parent
+for _p in [str(_project_root), str(_current_dir)]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 
-from backend.database import Base, engine, get_db, SessionLocal
-from backend.models import Employee
-from backend.schemas import AnalyticsResponse, EmployeeCreate, EmployeeResponse
+try:
+    from backend.database import Base, engine, get_db, SessionLocal
+    from backend.models import Employee
+    from backend.schemas import AnalyticsResponse, EmployeeCreate, EmployeeResponse
+except ModuleNotFoundError:
+    from database import Base, engine, get_db, SessionLocal
+    from models import Employee
+    from schemas import AnalyticsResponse, EmployeeCreate, EmployeeResponse
 
 Base.metadata.create_all(bind=engine)
 
@@ -31,6 +46,36 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="ACME Salary Management System", lifespan=lifespan)
+
+# Configure CORS origins to support local development and Vercel production deployment
+cors_origins = [
+    "https://acme-salary-management-one.vercel.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:4173",
+    "http://127.0.0.1:4173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+env_origins = os.environ.get("ALLOWED_ORIGINS") or os.environ.get("CORS_ORIGINS")
+if env_origins:
+    if env_origins.strip() == "*":
+        cors_origins = ["*"]
+    else:
+        for origin in env_origins.split(","):
+            cleaned = origin.strip().rstrip("/")
+            if cleaned and cleaned not in cors_origins:
+                cors_origins.append(cleaned)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app" if "*" not in cors_origins else None,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")
@@ -172,3 +217,8 @@ def salary_analytics(db: Session = Depends(get_db)):
             for row in groups
         ],
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)

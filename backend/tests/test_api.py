@@ -248,3 +248,46 @@ def test_cannot_incorrectly_rank_unconverted_salaries():
     assert groups["India"]["currency"] != groups["United States"]["currency"]
     assert groups["India"]["currency"] == "INR"
     assert groups["United States"]["currency"] == "USD"
+
+
+def test_cors_headers_for_frontend_origin():
+    # Test GET preflight on /api/employees
+    response = client.options(
+        "/api/employees",
+        headers={
+            "Origin": "https://acme-salary-management-one.vercel.app",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") == "https://acme-salary-management-one.vercel.app"
+
+    # Test POST preflight with headers on /api/employees
+    response = client.options(
+        "/api/employees",
+        headers={
+            "Origin": "https://acme-salary-management-one.vercel.app",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") == "https://acme-salary-management-one.vercel.app"
+    assert "content-type" in response.headers.get("access-control-allow-headers", "").lower()
+
+    # Test actual GET request on /api/analytics with Origin
+    response = client.get(
+        "/api/analytics",
+        headers={"Origin": "https://acme-salary-management-one.vercel.app"},
+    )
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") == "https://acme-salary-management-one.vercel.app"
+
+    # Test Vercel preview regex origin support
+    preview_origin = "https://acme-salary-management-preview-branch.vercel.app"
+    response = client.get(
+        "/api/employees",
+        headers={"Origin": preview_origin},
+    )
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") == preview_origin
